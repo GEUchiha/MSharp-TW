@@ -46,7 +46,7 @@ namespace XinZhao
                 return;
 
             Q = new Spell(SpellSlot.Q);
-            W = new Spell(SpellSlot.W, 900);
+            W = new Spell(SpellSlot.W, 850);
             E = new Spell(SpellSlot.E, 650);
             R = new Spell(SpellSlot.R, 450);
 
@@ -75,7 +75,7 @@ namespace XinZhao
 
 
             var mLane = new Menu("Lane Mode", "LaneMode");
-            mLane.AddItem(new MenuItem("EnabledFarm", "Enable! (On/Off: Mouse Scroll)").SetValue(true));
+            mLane.AddItem(new MenuItem("EnabledFarm", "Enable!").SetValue(true));
             mLane.AddItem(new MenuItem("Lane.UseQ", "Use Q").SetValue(false));
             mLane.AddItem(new MenuItem("Lane.UseW", "Use W").SetValue(false));
             mLane.AddItem(new MenuItem("Lane.UseE", "Use E").SetValue(false));
@@ -156,7 +156,7 @@ namespace XinZhao
 
         private static void OrbwalkingBeforeAttack(Orbwalking.BeforeAttackEventArgs args)
         {
-            if (!(args.Target is Obj_AI_Hero) || Orbwalker.ActiveMode != Orbwalking.OrbwalkingMode.Combo)
+            if (!(args.Target is Obj_AI_Hero) || Orbwalker.ActiveMode != Orbwalking.OrbwalkingMode.Combo || !Q.IsReady())
             {
                 return;
             }
@@ -166,8 +166,13 @@ namespace XinZhao
                 //Console.Write("Winding");
             }
             Items.UseItem();
-
-            if (Q.IsReady())
+            if (ItemData.Ironspike_Whip.GetItem().IsOwned(ObjectManager.Player))
+            {
+                Console.Write("item");
+                ItemData.Ironspike_Whip.GetItem().Cast();
+            }
+            var qt = TargetSelector.GetTarget(E.Range, TargetSelector.DamageType.Physical);
+            if (Q.IsReady() && qt.IsValidTarget() && Player.Distance(qt) <= 800)
             {
                 Q.Cast();
             }
@@ -218,8 +223,8 @@ namespace XinZhao
             {
                 Combo();
                 
-                var w = AssassinManager.GetTarget(W.Range, TargetSelector.DamageType.Physical);
-                if (w.IsValidTarget(W.Range) && W.IsReady())
+                var w = AssassinManager.GetTarget(E.Range, TargetSelector.DamageType.Physical);
+                if (w.IsValidTarget(E.Range) && W.IsReady())
                 {
                     W.Cast(w);
                 }
@@ -306,22 +311,25 @@ namespace XinZhao
             }
 
             var prediction = E.GetPrediction(t);
-            if (W.IsReady() && t != null)
+             if (W.IsReady() && t != null && t.IsValidTarget(E.Range))
+             {
+                 W.Cast(prediction.CastPosition);
+                 //Console.Write("combow");
+             }
+            if (W.GetDamage(t) > t.Health && t.IsValidTarget(W.Range-40))
             {
                 W.Cast(prediction.CastPosition);
-                //Console.Write("combow");
             }
-
-            var castPred = W.GetPrediction(t, true, W.Range);
+            /*var castPred = W.GetPrediction(t, true, W.Range);
             if (t.IsValidTarget(W.Range) && W.IsReady())
             {
                 W.Cast(castPred.CastPosition);
-                //Console.Write("WWW");
+                Console.Write("WWW");
             }
             if (W.GetDamage(t) > t.Health)
             {
                 W.Cast(castPred.CastPosition);
-            }
+            }*/
 
             if (PlayerSpells.IgniteSlot != SpellSlot.Unknown &&
                 Player.Spellbook.CanUseSpell(PlayerSpells.IgniteSlot) == SpellState.Ready)
@@ -348,10 +356,7 @@ namespace XinZhao
             if (!t.IsValidTarget())
                 return;
             Items.UseItem();
-            if (Q.IsReady())
-            {
-                Q.Cast();
-            }
+
             /*
             foreach (var item in Items.ItemDb)
             {
@@ -430,7 +435,7 @@ namespace XinZhao
             if (useW && W.IsReady() && minion != null)
             {
                 W.Cast(prediction.CastPosition);
-                //Console.Write("WWWW");
+                //Console.Write("pred w");
             }
         }
 
@@ -453,7 +458,7 @@ namespace XinZhao
             {
                 Q.Cast();
             }
-            if (useW && W.IsReady() && mob.IsValidTarget(W.Range))
+            if (useW && W.IsReady() && mob.IsValidTarget(400))
             {
                 W.Cast(mob);
             }
